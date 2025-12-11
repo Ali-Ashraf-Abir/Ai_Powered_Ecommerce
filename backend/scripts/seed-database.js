@@ -1,8 +1,8 @@
-// src/seeds/seed_diverse_with_images_cleanup.js
+// src/seeds/seed_diverse_no_images_cleanup.js
 // Run:
-//   BACKUP=true node src/seeds/seed_diverse_with_images_cleanup.js
+//   BACKUP=true node src/seeds/seed_diverse_no_images_cleanup.js
 // or
-//   node src/seeds/seed_diverse_with_images_cleanup.js
+//   node src/seeds/seed_diverse_no_images_cleanup.js
 
 const mongoose = require('mongoose');
 const fs = require('fs');
@@ -39,27 +39,9 @@ const styleLabels = ["Bohemian", "Minimalist", "Romantic", "Classic", "Modern", 
 const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const rint = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const maybe = (p=0.5) => Math.random() < p;
-const slug = (str) => str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+const slug = (str) => String(str || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
 let skuCounter = 100000;
-
-const buildImageSet = (name, category, color, idx) => {
-  const hero = `https://source.unsplash.com/800x1000/?${encodeURIComponent(category)},${encodeURIComponent(color)}`;
-  const seedBase = slug(name || `product-${idx}`);
-  const pic1 = `https://picsum.photos/seed/${encodeURIComponent(seedBase + '-1')}/800/1000`;
-  const pic2 = `https://picsum.photos/seed/${encodeURIComponent(seedBase + '-2')}/800/1000`;
-  const pic3 = `https://picsum.photos/seed/${encodeURIComponent(seedBase + '-3')}/800/1000`;
-  const captions = [
-    `Hero image - front view of ${name}`,
-    `Side/back view showing silhouette and length`,
-    `Close-up on fabric/pattern and details`,
-    `Styled shot with suggested accessories`
-  ];
-  return {
-    images: [hero, pic1, pic2, pic3],
-    captions
-  };
-};
 
 const generateProduct = (i) => {
   const isDress = Math.random() < 0.7;
@@ -134,8 +116,6 @@ const generateProduct = (i) => {
     ...(cultural ? ["traditional", "handmade"] : [])
   ].filter(Boolean);
 
-  const { images, captions } = buildImageSet(name, category, color, i);
-
   return {
     name,
     category,
@@ -154,8 +134,8 @@ const generateProduct = (i) => {
     targetAudience,
     season: [rand(["Spring", "Summer", "Fall", "Winter"])],
     metadata: {
-      skuSource: "seed_diverse_script_images_cleanup",
-      batch: "diverse_v1_images",
+      skuSource: "seed_diverse_no_images_script",
+      batch: "diverse_v1_no_images",
       modelSample: {
         heightCm: rint(160, 185),
         bustCm: rint(80, 120),
@@ -168,10 +148,7 @@ const generateProduct = (i) => {
       }
     },
     tags,
-    imageUrl: images[0],
-    images,
-    imageCaptions: captions,
-    additionalImages: images.slice(1),
+    // Image fields removed intentionally
     stockQuantity: rint(0, 300),
     sku: `DV-${skuCounter++}`,
     isActive: true,
@@ -303,7 +280,7 @@ const seed = async () => {
     await Review.deleteMany({});
 
     // Insert products
-    console.log(`Generating ${PRODUCT_COUNT} diverse products with images...`);
+    console.log(`Generating ${PRODUCT_COUNT} diverse products (no images)...`);
     const productDocs = [];
     for (let i = 0; i < PRODUCT_COUNT; i++) {
       productDocs.push(generateProduct(i));
