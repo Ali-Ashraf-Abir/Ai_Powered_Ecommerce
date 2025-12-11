@@ -28,6 +28,28 @@ backend/dist/
 backend/build/
 backend/*.log
 
+# Virtual environments
+backend/embed_microservice/venv/
+backend/embed_microservice/vbenv/
+backend/embed_microservice/.venv/
+
+# Python cache
+backend/embed_microservice/__pycache__/
+backend/embed_microservice/**/__pycache__/
+
+# Compiled Python files
+backend/embed_microservice/*.pyc
+backend/embed_microservice/**/*.pyc
+
+# Build / cache files
+backend/embed_microservice/.pytest_cache/
+backend/embed_microservice/.mypy_cache/
+backend/embed_microservice/.ruff_cache/
+
+# Uvicorn / FastAPI logs
+backend/embed_microservice/*.log
+
+
 # PM2 & production dumps
 .pids
 *.pid

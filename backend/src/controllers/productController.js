@@ -6,12 +6,12 @@ const { asyncHandler } = require('../middleware/errorHandler');
 // @route   GET /api/products
 // @access  Public
 const getProducts = asyncHandler(async (req, res) => {
-  const { 
-    category, 
-    search, 
-    minPrice, 
-    maxPrice, 
-    limit = 50, 
+  const {
+    category,
+    search,
+    minPrice,
+    maxPrice,
+    limit = 50,
     offset = 0,
     sortBy = 'createdAt',
     order = 'desc'
@@ -38,7 +38,7 @@ const getProducts = asyncHandler(async (req, res) => {
 
   // Build sort object
   const sortOrder = order === 'asc' ? 1 : -1;
-  const sort = search 
+  const sort = search
     ? { score: { $meta: 'textScore' } }
     : { [sortBy]: sortOrder };
 
@@ -56,8 +56,11 @@ const getProducts = asyncHandler(async (req, res) => {
     success: true,
     count: products.length,
     total,
+    page: parseInt(offset) / parseInt(limit) || 0,
+    totalPages: Math.ceil(total / parseInt(limit)),
     products,
   });
+
 });
 
 // @desc    Get single product by ID
@@ -67,8 +70,8 @@ const getProductById = asyncHandler(async (req, res) => {
   const product = await Product.findById(req.params.id);
 
   if (!product) {
-    return res.status(404).json({ 
-      error: 'Product not found' 
+    return res.status(404).json({
+      error: 'Product not found'
     });
   }
 
@@ -100,15 +103,15 @@ const updateProduct = asyncHandler(async (req, res) => {
   const product = await Product.findByIdAndUpdate(
     req.params.id,
     req.body,
-    { 
-      new: true, 
-      runValidators: true 
+    {
+      new: true,
+      runValidators: true
     }
   );
 
   if (!product) {
-    return res.status(404).json({ 
-      error: 'Product not found' 
+    return res.status(404).json({
+      error: 'Product not found'
     });
   }
 
@@ -125,8 +128,8 @@ const deleteProduct = asyncHandler(async (req, res) => {
   const product = await Product.findById(req.params.id);
 
   if (!product) {
-    return res.status(404).json({ 
-      error: 'Product not found' 
+    return res.status(404).json({
+      error: 'Product not found'
     });
   }
 
@@ -144,9 +147,9 @@ const deleteProduct = asyncHandler(async (req, res) => {
 // @route   GET /api/products/featured
 // @access  Public
 const getFeaturedProducts = asyncHandler(async (req, res) => {
-  const products = await Product.find({ 
-    isActive: true, 
-    isFeatured: true 
+  const products = await Product.find({
+    isActive: true,
+    isFeatured: true
   })
     .limit(10)
     .select('-embeddings');
