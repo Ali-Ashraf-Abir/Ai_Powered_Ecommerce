@@ -1,27 +1,27 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Star, ArrowLeft } from 'lucide-react';
-import { api } from '@/lib/api';
+import { useState, useEffect, use } from "react";
+import { useRouter } from "next/navigation";
+import { Star, ArrowLeft } from "lucide-react";
+import { api } from "@/lib/api";
 
-import type { Product } from '@/types';
-import { useAuth } from '@/context/AuthContext';
-import { useCart } from '@/context/CartContext';
-import AIChat from '@/components/chats/AiChat';
+import type { Product } from "@/types";
+import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
+import AIChat from "@/components/chats/AiChat";
 
 interface ProductDetailPageProps {
-  params: {
-    id: string;
-  };
+  params: Promise<{ id: string }>;
 }
 
-export default function ProductDetailPage({ params }: ProductDetailPageProps) {
+export default function ProductDetailPage(props: ProductDetailPageProps) {
+  const { id } = use(props.params); // ← FIX applied here
+
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [quantity, setQuantity] = useState<number>(1);
-  const [selectedSize, setSelectedSize] = useState<string>('');
-  const [selectedColor, setSelectedColor] = useState<string>('');
+  const [selectedSize, setSelectedSize] = useState<string>("");
+  const [selectedColor, setSelectedColor] = useState<string>("");
   const [adding, setAdding] = useState<boolean>(false);
 
   const router = useRouter();
@@ -30,20 +30,21 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
 
   useEffect(() => {
     loadProduct();
-  }, [params.id]);
+  }, [id]);
 
   const loadProduct = async () => {
     try {
-      const data = await api.getProductById(params.id);
+      const data = await api.getProductById(id);
       setProduct(data.product);
-      setSelectedSize(data.product.sizes?.[0] || '');
-      setSelectedColor(data.product.colors?.[0] || '');
+      setSelectedSize(data.product.sizes?.[0] || "");
+      setSelectedColor(data.product.colors?.[0] || "");
     } catch (error) {
-      console.error('Failed to load product:', error);
+      console.error("Failed to load product:", error);
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleAddToCart = async () => {
     if (!user) {
