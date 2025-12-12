@@ -48,7 +48,6 @@ async def embed(payload: Texts, request: Request):
     if len(texts) > MAX_BATCH:
         raise HTTPException(status_code=413, detail=f"Batch too large. Max {MAX_BATCH} texts per request.")
 
-    # Optional lightweight sanitization/truncation
     if payload.truncate_to:
         texts = [t[:payload.truncate_to] for t in texts]
 

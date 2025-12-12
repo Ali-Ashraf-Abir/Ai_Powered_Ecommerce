@@ -1,8 +1,5 @@
-// src/seeds/seed_diverse_no_images_cleanup.js
-// Run:
-//   BACKUP=true node src/seeds/seed_diverse_no_images_cleanup.js
-// or
-//   node src/seeds/seed_diverse_no_images_cleanup.js
+// src/seeds/seed_improved.js
+// Run: node src/seeds/seed_improved.js
 
 const mongoose = require('mongoose');
 const fs = require('fs');
@@ -13,162 +10,287 @@ const User = require('../src/models/User');
 const Review = require('../src/models/Review');
 const { MONGODB_URI } = require('../src/config/env');
 
-const PRODUCT_COUNT = 500; // change if you want more/less
+const PRODUCT_COUNT = 500;
 
-// ---------- Helper pools for diversity ----------
-const categories = ["Dresses", "Tops", "Pants", "Jackets", "Shoes", "Accessories", "Traditional", "Maternity"];
-const dressTypes = [
-  "A-line dress", "Sheath dress", "Maxi dress", "Midi dress", "Mini dress",
-  "Wrap dress", "Slip dress", "Shirt dress", "Ball gown", "Mermaid gown",
-  "Kaftan", "Kimono dress", "Sari + blouse set", "Abaya", "Qipao/Cheongsam"
-];
-const occasions = ["Casual", "Work", "Evening", "Wedding", "Bridal", "Party", "Beach", "Festival", "Travel", "Formal", "Religious Ceremony"];
-const colors = ["Ivory", "Beige", "Black", "White", "Navy", "Red", "Emerald", "Blush", "Mustard", "Coral", "Olive", "Lavender", "Chocolate"];
-const fabrics = ["Cotton", "Linen", "Silk", "Satin", "Chiffon", "Crepe", "Velvet", "Organza", "Denim", "Jersey", "Rayon", "Brocade", "Lace"];
-const patterns = ["Solid", "Floral", "Paisley", "Geometric", "Plaid", "Polka dot", "Stripe", "Embroidered", "Beaded", "Sequin"];
-const necklines = ["V-neck", "Round", "Square", "Boat", "Sweetheart", "Halter", "High neck", "Off-shoulder"];
-const sleeves = ["Sleeveless", "Short", "3/4", "Long", "Cap sleeve", "Bell sleeve", "Raglan", "Puff sleeve"];
-const lengths = ["Mini", "Above knee", "Knee", "Midi", "Tea", "Ankle", "Floor-length"];
-const fits = ["True to size", "Slim fit", "Relaxed", "Oversized", "Tailored"];
-const bodyTypes = ["Petite", "Regular", "Tall", "Plus size", "Maternity-friendly", "Athletic build", "Curvy", "Pregnancy/postpartum"];
-const sustainabilityTags = ["organic", "recycled", "low-waste", "vegan", "carbon-neutral"];
-const brands = ["ModaRoot", "HeritageWeave", "Sunloom", "EcoThread", "StudioLuxe", "StreetMuse", "CeremonyCo", "NomadCraft"];
-const styleLabels = ["Bohemian", "Minimalist", "Romantic", "Classic", "Modern", "Streetwear", "Athleisure", "Glam", "Traditional"];
+// ---------- Improved Data Pools ----------
+const brands = {
+  luxury: ["Valentino", "Dior", "Chanel", "Gucci"],
+  contemporary: ["Reformation", "Madewell", "Everlane", "COS"],
+  affordable: ["Zara", "H&M", "Mango", "ASOS"],
+  traditional: ["Fabindia", "Biba", "Sabyasachi", "Anita Dongre"]
+};
 
-// ---------- Helpers ----------
+// Product templates with proper categorization
+const productTemplates = {
+  dresses: {
+    casual: [
+      { name: "Floral Midi Dress", keywords: ["casual", "floral", "midi", "everyday", "brunch"], price: [40, 120] },
+      { name: "Cotton Sundress", keywords: ["summer", "casual", "sundress", "beach", "vacation"], price: [35, 90] },
+      { name: "Denim Shirt Dress", keywords: ["casual", "denim", "shirt dress", "weekend", "versatile"], price: [50, 110] },
+      { name: "Wrap Dress", keywords: ["wrap", "casual", "flattering", "work", "versatile"], price: [55, 130] },
+      { name: "T-shirt Dress", keywords: ["casual", "comfortable", "everyday", "relaxed", "simple"], price: [25, 65] }
+    ],
+    formal: [
+      { name: "Evening Gown", keywords: ["formal", "evening", "gown", "elegant", "gala"], price: [200, 800] },
+      { name: "Cocktail Dress", keywords: ["cocktail", "party", "formal", "evening", "celebration"], price: [120, 350] },
+      { name: "Black Tie Dress", keywords: ["formal", "black tie", "elegant", "sophisticated"], price: [250, 900] }
+    ],
+    wedding: [
+      { name: "Bridal Gown", keywords: ["wedding", "bridal", "bride", "white", "ceremony"], price: [800, 3000] },
+      { name: "Wedding Guest Dress", keywords: ["wedding", "guest", "celebration", "elegant", "party"], price: [100, 300] },
+      { name: "Bridesmaid Dress", keywords: ["bridesmaid", "wedding", "party", "celebration"], price: [120, 280] },
+      { name: "Rehearsal Dinner Dress", keywords: ["wedding", "rehearsal", "dinner", "semi-formal"], price: [80, 200] }
+    ],
+    workwear: [
+      { name: "Sheath Dress", keywords: ["work", "professional", "office", "business", "tailored"], price: [70, 180] },
+      { name: "Blazer Dress", keywords: ["work", "professional", "power", "office", "structured"], price: [90, 220] },
+      { name: "Pencil Dress", keywords: ["work", "professional", "office", "classic", "fitted"], price: [65, 160] }
+    ]
+  },
+  tops: {
+    casual: [
+      { name: "Cotton T-Shirt", keywords: ["casual", "tshirt", "everyday", "basic", "comfortable"], price: [15, 45] },
+      { name: "Henley Top", keywords: ["casual", "henley", "relaxed", "weekend"], price: [25, 60] },
+      { name: "Tank Top", keywords: ["casual", "tank", "summer", "basic", "layering"], price: [12, 35] }
+    ],
+    dressy: [
+      { name: "Silk Blouse", keywords: ["dressy", "silk", "elegant", "work", "sophisticated"], price: [80, 200] },
+      { name: "Peplum Top", keywords: ["dressy", "peplum", "flattering", "work", "feminine"], price: [50, 120] },
+      { name: "Satin Camisole", keywords: ["dressy", "satin", "elegant", "layering", "evening"], price: [40, 95] }
+    ]
+  },
+  bottoms: {
+    pants: [
+      { name: "High-Waisted Jeans", keywords: ["jeans", "denim", "casual", "everyday", "versatile"], price: [60, 150] },
+      { name: "Wide Leg Pants", keywords: ["pants", "wide leg", "comfortable", "trendy", "work"], price: [55, 140] },
+      { name: "Tailored Trousers", keywords: ["trousers", "tailored", "work", "professional", "elegant"], price: [70, 180] }
+    ],
+    skirts: [
+      { name: "Midi Skirt", keywords: ["skirt", "midi", "versatile", "feminine", "work"], price: [45, 110] },
+      { name: "Pleated Skirt", keywords: ["skirt", "pleated", "feminine", "dressy", "elegant"], price: [50, 120] }
+    ]
+  },
+  outerwear: {
+    jackets: [
+      { name: "Leather Jacket", keywords: ["jacket", "leather", "edgy", "casual", "cool"], price: [150, 500] },
+      { name: "Denim Jacket", keywords: ["jacket", "denim", "casual", "versatile", "classic"], price: [50, 120] },
+      { name: "Blazer", keywords: ["blazer", "work", "professional", "tailored", "smart"], price: [80, 250] }
+    ],
+    coats: [
+      { name: "Trench Coat", keywords: ["coat", "trench", "classic", "elegant", "rain"], price: [120, 400] },
+      { name: "Wool Coat", keywords: ["coat", "wool", "winter", "warm", "elegant"], price: [150, 500] }
+    ]
+  },
+  shoes: {
+    casual: [
+      { name: "White Sneakers", keywords: ["sneakers", "casual", "comfortable", "everyday", "athletic"], price: [50, 150] },
+      { name: "Sandals", keywords: ["sandals", "summer", "casual", "comfortable", "beach"], price: [30, 90] }
+    ],
+    dressy: [
+      { name: "Heels", keywords: ["heels", "dressy", "formal", "elegant", "party"], price: [60, 200] },
+      { name: "Ankle Boots", keywords: ["boots", "ankle", "versatile", "fall", "winter"], price: [80, 250] }
+    ]
+  },
+  accessories: {
+    bags: [
+      { name: "Leather Handbag", keywords: ["handbag", "bag", "leather", "work", "everyday"], price: [100, 400] },
+      { name: "Crossbody Bag", keywords: ["bag", "crossbody", "casual", "convenient", "travel"], price: [50, 150] },
+      { name: "Clutch", keywords: ["clutch", "evening", "party", "formal", "small"], price: [40, 120] }
+    ],
+    jewelry: [
+      { name: "Gold Necklace", keywords: ["necklace", "jewelry", "gold", "elegant", "accessory"], price: [30, 200] },
+      { name: "Pearl Earrings", keywords: ["earrings", "jewelry", "pearl", "classic", "elegant"], price: [25, 150] }
+    ]
+  }
+};
+
+const colors = {
+  neutrals: ["Black", "White", "Beige", "Gray", "Navy", "Cream", "Taupe"],
+  brights: ["Red", "Pink", "Blue", "Green", "Yellow", "Orange", "Purple"],
+  pastels: ["Blush", "Lavender", "Mint", "Peach", "Baby Blue", "Powder Pink"],
+  earth: ["Brown", "Olive", "Rust", "Terracotta", "Sage", "Mustard"]
+};
+
+const fabrics = {
+  casual: ["Cotton", "Denim", "Jersey", "Linen", "Canvas"],
+  dressy: ["Silk", "Satin", "Chiffon", "Velvet", "Lace", "Organza"],
+  structured: ["Wool", "Tweed", "Leather", "Suede"],
+  seasonal: ["Cashmere", "Knit", "Fleece"]
+};
+
+const patterns = ["Solid", "Floral", "Striped", "Polka Dot", "Geometric", "Animal Print", "Paisley", "Plaid"];
+const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
+const occasions = ["Casual", "Work", "Party", "Wedding", "Formal", "Beach", "Travel", "Evening"];
+const fits = ["Regular", "Slim", "Relaxed", "Oversized", "Tailored"];
+
+// ---------- Helper Functions ----------
 const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
-const rint = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-const maybe = (p=0.5) => Math.random() < p;
-const slug = (str) => String(str || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+const randRange = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+const maybe = (p = 0.5) => Math.random() < p;
 
 let skuCounter = 100000;
 
-const generateProduct = (i) => {
-  const isDress = Math.random() < 0.7;
-  const category = isDress ? "Dresses" : rand(categories);
-  const dressType = isDress ? rand(dressTypes) : null;
-  const brand = rand(brands);
-  const priceTier = Math.random();
-  const price = priceTier < 0.5 ? rint(20, 80) : (priceTier < 0.85 ? rint(80, 250) : rint(250, 1500));
-  const color = rand(colors);
-  const fabric = rand(fabrics);
-  const pattern = rand(patterns);
-  const neckline = rand(necklines);
-  const sleeve = rand(sleeves);
-  const length = rand(lengths);
+// Get all templates flattened
+const getAllTemplates = () => {
+  const all = [];
+  Object.keys(productTemplates).forEach(category => {
+    Object.keys(productTemplates[category]).forEach(subcategory => {
+      productTemplates[category][subcategory].forEach(template => {
+        all.push({
+          ...template,
+          mainCategory: category,
+          subCategory: subcategory
+        });
+      });
+    });
+  });
+  return all;
+};
+
+// Map category to proper name
+const getCategoryName = (mainCat) => {
+  const mapping = {
+    dresses: "Dresses",
+    tops: "Tops",
+    bottoms: "Bottoms",
+    outerwear: "Outerwear",
+    shoes: "Shoes",
+    accessories: "Accessories"
+  };
+  return mapping[mainCat] || "Clothing";
+};
+
+// Get occasion from subcategory
+const getOccasion = (subCat, keywords) => {
+  if (keywords.includes("wedding") || keywords.includes("bridal")) return "Wedding";
+  if (keywords.includes("work") || keywords.includes("professional")) return "Work";
+  if (keywords.includes("formal") || keywords.includes("evening")) return "Formal";
+  if (keywords.includes("party")) return "Party";
+  if (keywords.includes("beach")) return "Beach";
+  if (subCat === "casual") return "Casual";
+  return rand(occasions);
+};
+
+// Generate meaningful description
+const generateDescription = (template, color, fabric, pattern, fit) => {
+  const { name, keywords, mainCategory } = template;
+  
+  const fabricDesc = fabric ? `crafted in ${fabric.toLowerCase()}` : "";
+  const patternDesc = pattern !== "Solid" ? `with ${pattern.toLowerCase()} pattern` : "";
+  const fitDesc = fit !== "Regular" ? `Features a ${fit.toLowerCase()} fit` : "";
+  
+  const parts = [
+    `A beautiful ${name.toLowerCase()}`,
+    fabricDesc,
+    patternDesc,
+    `in ${color.toLowerCase()}.`,
+    fitDesc
+  ].filter(Boolean);
+  
+  return parts.join(" ").replace(/\s+/g, " ").trim();
+};
+
+// Generate AI description with proper details
+const generateAIDescription = (template, color, fabric, pattern, fit, occasion) => {
+  const { name, keywords } = template;
+  
+  const features = [
+    `Color: ${color}`,
+    fabric ? `Fabric: ${fabric}` : null,
+    pattern !== "Solid" ? `Pattern: ${pattern}` : null,
+    `Fit: ${fit}`,
+    `Occasion: ${occasion}`
+  ].filter(Boolean);
+  
+  const styling = keywords.includes("dress") 
+    ? "Pair with heels and jewelry for a complete look."
+    : keywords.includes("jacket")
+    ? "Layer over dresses or pair with jeans."
+    : "Versatile piece that works for multiple occasions.";
+  
+  const care = fabric === "Silk" || fabric === "Wool" 
+    ? "Dry clean recommended." 
+    : "Machine wash cold, tumble dry low.";
+  
+  return `${name} ${features.join(" • ")}. ${styling} Care: ${care}`;
+};
+
+// Generate a product
+const generateProduct = () => {
+  const allTemplates = getAllTemplates();
+  const template = rand(allTemplates);
+  const { name, keywords, price: priceRange, mainCategory, subCategory } = template;
+  
+  // Pick brand based on price tier
+  const avgPrice = (priceRange[0] + priceRange[1]) / 2;
+  let brandPool;
+  if (avgPrice > 400) brandPool = brands.luxury;
+  else if (avgPrice > 150) brandPool = brands.contemporary;
+  else brandPool = brands.affordable;
+  
+  const brand = rand(brandPool);
+  const price = randRange(priceRange[0], priceRange[1]);
+  
+  // Pick appropriate color and fabric
+  const colorPool = keywords.includes("wedding") || keywords.includes("bridal")
+    ? [...colors.neutrals, ...colors.pastels]
+    : [...colors.neutrals, ...colors.brights];
+  const color = rand(colorPool);
+  
+  const fabricPool = keywords.includes("formal") || keywords.includes("dressy")
+    ? fabrics.dressy
+    : keywords.includes("work")
+    ? fabrics.structured
+    : fabrics.casual;
+  const fabric = rand(fabricPool);
+  
+  const pattern = maybe(0.3) ? rand(patterns) : "Solid";
   const fit = rand(fits);
-  const sizeSet = maybe(0.2) ? ["XS","S","M","L","XL","1X","2X","3X"] : (maybe(0.15) ? ["XXS","XS","S","M"] : ["S","M","L","XL"]);
-  const targetAudience = rand(["Women", "Unisex", "Maternity"]);
-  const bodyType = rand(bodyTypes);
-  const sustainable = maybe(0.18);
-  const cultural = maybe(0.08);
-  const isMaternity = maybe(0.06);
-
-  const nameParts = [
-    brand,
-    isDress ? dressType : rand(["Top", "Jacket", "Pant", "Blouse", "Skirt"]),
-    color,
-    slug(pattern).replace(/-/g, ' ')
-  ].filter(Boolean).slice(0,4);
-  const name = nameParts.join(' ').replace(/\s{2,}/g,' ').trim();
-
-  const shortDesc = isDress
-    ? `${dressType} in ${fabric} with ${pattern.toLowerCase()} pattern — ${fit.toLowerCase()} fit, ${length.toLowerCase()}.`
-    : `A ${fit.toLowerCase()} ${category.toLowerCase()} from ${brand} crafted in ${fabric}.`;
-
-  const aiDescription = (() => {
-    const keyAttributes = [
-      `Fabric: ${fabric}`,
-      `Pattern: ${pattern}`,
-      `Color: ${color}`,
-      `Neckline: ${neckline}`,
-      `Sleeve: ${sleeve}`,
-      `Length: ${length}`,
-      `Fit: ${fit}`
-    ];
-    const fitNoteMap = {
-      "True to size": "Order your normal size.",
-      "Slim fit": "Consider sizing up if between sizes or for layering.",
-      "Relaxed": "Comfortable, allows movement; sizing can be your usual.",
-      "Oversized": "Designed to be roomy—size down for a fitted look.",
-      "Tailored": "For a sharp silhouette; follow measurements closely."
-    };
-    const additional = [];
-    if (isMaternity) additional.push("Maternity-friendly panel & adjustable waist.");
-    if (bodyType === "Petite") additional.push("Hem is shorter—great for petite frames.");
-    if (bodyType === "Plus size") additional.push("Cut designed for curvy silhouettes with supportive seams.");
-    if (sustainable) additional.push(`Sustainability: ${rand(sustainabilityTags)} materials used.`);
-    if (cultural) additional.push("Culturally inspired detailing and traditional craftsmanship.");
-    const styleRec = `Style suggestion: pair with ${rand(["block heels", "white sneakers", "ankle boots", "gold jewelry", "a tailored blazer"])}.`;
-    return `${shortDesc} ${keyAttributes.join(' • ')} ${fitNoteMap[fit]} ${additional.join(' ')} ${styleRec}`;
-  })();
-
-  const styleTips = `Wear for ${rand(occasions)}. Try ${rand(["belted", "layered", "with loafers", "with heels", "with a denim jacket"])}.`;
-
+  const occasion = getOccasion(subCategory, keywords);
+  const category = getCategoryName(mainCategory);
+  
+  // Generate name with brand and color
+  const productName = `${brand} ${name} ${color}${pattern !== "Solid" ? ` ${pattern}` : ""}`;
+  
+  const description = generateDescription(template, color, fabric, pattern, fit);
+  const aiDescription = generateAIDescription(template, color, fabric, pattern, fit, occasion);
+  
+  // Generate relevant tags
   const tags = [
-    "dress",
-    pattern.toLowerCase(),
+    ...keywords,
+    color.toLowerCase(),
     fabric.toLowerCase(),
     fit.toLowerCase(),
-    styleLabels.includes(rand(styleLabels)) ? rand(styleLabels).toLowerCase() : "everyday",
-    ...(sustainable ? ["sustainable", rand(sustainabilityTags)] : []),
-    ...(isMaternity ? ["maternity"] : []),
-    ...(cultural ? ["traditional", "handmade"] : [])
-  ].filter(Boolean);
-
+    occasion.toLowerCase(),
+    ...(maybe(0.2) ? ["sustainable", "eco-friendly"] : [])
+  ].filter((v, i, a) => a.indexOf(v) === i); // unique only
+  
   return {
-    name,
+    name: productName,
     category,
     price,
-    description: `${shortDesc} ${styleTips} Care: ${maybe(0.85) ? "Machine wash cold, line dry." : "Dry clean only."}`,
+    description,
     aiDescription,
-    color: [color, rand(colors)],
-    sizes: sizeSet,
+    color: [color, maybe(0.3) ? rand(colorPool) : color], // primary + optional secondary
+    sizes,
     material: fabric,
     brand,
-    style: rand(styleLabels),
+    style: keywords.includes("elegant") ? "Elegant" : 
+           keywords.includes("casual") ? "Casual" :
+           keywords.includes("edgy") ? "Edgy" : "Classic",
     fit,
-    occasion: rand(occasions),
-    careInstructions: maybe(0.85) ? "Machine wash cold, gentle cycle. Hang to dry." : "Dry clean only. Professional cleaning recommended.",
-    styleTips,
-    targetAudience,
-    season: [rand(["Spring", "Summer", "Fall", "Winter"])],
-    metadata: {
-      skuSource: "seed_diverse_no_images_script",
-      batch: "diverse_v1_no_images",
-      modelSample: {
-        heightCm: rint(160, 185),
-        bustCm: rint(80, 120),
-        waistCm: rint(60, 110),
-        hipsCm: rint(85, 140)
-      },
-      inclusive: {
-        bodyType,
-        isMaternity
-      }
-    },
+    occasion,
     tags,
-    // Image fields removed intentionally
-    stockQuantity: rint(0, 300),
-    sku: `DV-${skuCounter++}`,
+    stockQuantity: randRange(0, 200),
+    sku: `${category.slice(0,2).toUpperCase()}-${skuCounter++}`,
     isActive: true,
-    isFeatured: maybe(0.07),
+    isFeatured: maybe(0.05),
     analytics: {
-      viewCount: rint(0, 1000),
-      cartAddCount: rint(0, 200),
-      purchaseCount: rint(0, 100),
+      viewCount: randRange(0, 500),
+      cartAddCount: randRange(0, 100),
+      purchaseCount: randRange(0, 50),
       averageRating: parseFloat((Math.random() * 2 + 3).toFixed(2)),
-      reviewCount: rint(0, 60)
-    },
-    embeddings: [],
-    attributes: {
-      neckline,
-      sleeve,
-      length,
-      pattern,
-      sustainable,
-      cultural,
-      neckline_keyword: neckline.toLowerCase().replace(/\s+/g,'_')
+      reviewCount: randRange(0, 30)
     }
   };
 };
@@ -181,27 +303,17 @@ const createUsers = async () => {
     passwordHash: adminHash,
     name: "Admin User",
     phone: "000-000-0000",
-    stylePreferences: "Elegant, Romantic",
-    sizePreferences: { tops: "M", pants: "32", shoes: "9" },
-    favoriteCategories: ["Dresses", "Bridal", "Maternity"],
     isActive: true,
     lastLogin: new Date()
   };
 
   const users = [];
-  for (let i = 1; i <= 25; i++) {
+  for (let i = 1; i <= 30; i++) {
     users.push({
       email: `user${i}@example.com`,
-      passwordHash: await bcrypt.hash("password" + i, 10),
+      passwordHash: await bcrypt.hash(`password${i}`, 10),
       name: `User ${i}`,
-      phone: `+1-555-010${String(i).padStart(2,'0')}`,
-      stylePreferences: rand(styleLabels),
-      sizePreferences: {
-        tops: rand(["XS","S","M","L","XL","1X","2X"]),
-        pants: rand(["28","30","32","34","36","38"]),
-        shoes: rand(["6","7","8","9","10","11"])
-      },
-      favoriteCategories: [rand(categories), rand(categories)],
+      phone: `+1-555-${String(1000 + i).slice(1)}`,
       isActive: true
     });
   }
@@ -210,101 +322,79 @@ const createUsers = async () => {
 };
 
 // ---------- Create Reviews ----------
-const generateReviews = (products, users, count = 400) => {
+const generateReviews = (products, users, count = 300) => {
   const reviews = [];
+  const reviewTexts = {
+    5: ["Absolutely love it!", "Perfect fit and quality!", "Exceeded expectations!", "Best purchase ever!"],
+    4: ["Really nice, minor issues", "Good quality overall", "Happy with purchase", "Looks great!"],
+    3: ["It's okay, as expected", "Average quality", "Decent for the price"],
+    2: ["Not what I expected", "Quality could be better", "Disappointing"],
+    1: ["Very poor quality", "Does not match description", "Returning this"]
+  };
+
   for (let i = 0; i < count; i++) {
     const product = rand(products);
     const user = rand(users);
-    const rating = rint(1,5);
-    const fitFeedback = rand(["true_to_size","runs_small","runs_large"]);
-    const reviewTextPool = [
-      "Beautiful fabric and great drape.",
-      "Loved the cut—very flattering.",
-      "Sizing ran smaller than expected.",
-      "Perfect for my wedding!",
-      "Good quality but pricey.",
-      "Comfortable and breathable for summer.",
-      "Not suitable for tall frame — hem was short.",
-      "Excellent craftsmanship and embroidery.",
-      "Nice color, but color transfer after first wash.",
-      "Great maternity fit — stretchy and supportive."
-    ];
-
+    const rating = Math.random() < 0.6 ? randRange(4, 5) : randRange(1, 5);
+    
     reviews.push({
-      productId: product._id ? product._id : product.id,
-      userId: user._id ? user._id : user.id,
+      productId: product._id,
+      userId: user._id,
       rating,
-      title: rating >= 4 ? "Loved it!" : (rating === 3 ? "It's okay" : "Disappointed"),
-      reviewText: rand(reviewTextPool),
-      purchasedSize: rand(product.sizes || ["S","M","L"]),
-      fitFeedback,
-      isVerifiedPurchase: Math.random() > 0.3,
+      title: reviewTexts[rating][0],
+      reviewText: rand(reviewTexts[rating]),
+      purchasedSize: rand(product.sizes || sizes),
+      fitFeedback: rand(["true_to_size", "runs_small", "runs_large"]),
+      isVerifiedPurchase: maybe(0.8),
       isApproved: true,
-      createdAt: new Date(Date.now() - rint(0, 1000) * 24 * 3600 * 1000)
+      createdAt: new Date(Date.now() - randRange(0, 365) * 24 * 3600 * 1000)
     });
   }
   return reviews;
 };
 
-// ---------- Backup helper ----------
-async function backupCollectionsIfRequested() {
-  if (process.env.BACKUP !== 'true') return;
-  const backupDir = path.join('/tmp', `db-backup-${Date.now()}`);
-  fs.mkdirSync(backupDir, { recursive: true });
-  console.log(`Backing up collections to ${backupDir} ...`);
-
-  const prods = await Product.find({}).lean();
-  const users = await User.find({}).lean();
-  const reviews = await Review.find({}).lean();
-
-  fs.writeFileSync(path.join(backupDir, 'products.json'), JSON.stringify(prods, null, 2));
-  fs.writeFileSync(path.join(backupDir, 'users.json'), JSON.stringify(users, null, 2));
-  fs.writeFileSync(path.join(backupDir, 'reviews.json'), JSON.stringify(reviews, null, 2));
-
-  console.log('Backup complete.');
-}
-
-// ---------- Seed procedure ----------
+// ---------- Seed Main Function ----------
 const seed = async () => {
   try {
-    await mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
-    console.log('Connected to DB');
+    await mongoose.connect(MONGODB_URI);
+    console.log('✓ Connected to MongoDB');
 
-    // Optional backup
-    await backupCollectionsIfRequested();
-
-    // Cleanup existing data first
-    console.log('Clearing existing collections (Product, User, Review)...');
+    console.log('Clearing existing data...');
     await Product.deleteMany({});
     await User.deleteMany({});
     await Review.deleteMany({});
+    console.log('✓ Collections cleared');
 
-    // Insert products
-    console.log(`Generating ${PRODUCT_COUNT} diverse products (no images)...`);
+    console.log(`\nGenerating ${PRODUCT_COUNT} products...`);
     const productDocs = [];
     for (let i = 0; i < PRODUCT_COUNT; i++) {
-      productDocs.push(generateProduct(i));
+      productDocs.push(generateProduct());
     }
-    const createdProducts = await Product.insertMany(productDocs, { ordered: false });
-    console.log(`Inserted ${createdProducts.length} products.`);
+    const createdProducts = await Product.insertMany(productDocs);
+    console.log(`✓ Inserted ${createdProducts.length} products`);
 
-    // Users
-    console.log('Creating users...');
+    console.log('\nCreating users...');
     const { admin, users } = await createUsers();
     await User.create(admin);
     const createdUsers = await User.insertMany(users);
-    console.log(`Inserted ${1 + createdUsers.length} users (including admin).`);
+    console.log(`✓ Inserted ${1 + createdUsers.length} users`);
 
-    // Reviews
-    console.log('Generating reviews...');
-    const reviews = generateReviews(createdProducts, createdUsers, Math.min(800, createdProducts.length * 2));
-    const createdReviews = await Review.insertMany(reviews, { ordered: false });
-    console.log(`Inserted ${createdReviews.length} reviews.`);
+    console.log('\nGenerating reviews...');
+    const reviews = generateReviews(createdProducts, createdUsers, 300);
+    const createdReviews = await Review.insertMany(reviews);
+    console.log(`✓ Inserted ${createdReviews.length} reviews`);
 
-    console.log('Seeding complete.');
+    console.log('\n✅ Seeding complete!');
+    console.log(`
+Summary:
+- Products: ${createdProducts.length}
+- Users: ${1 + createdUsers.length}
+- Reviews: ${createdReviews.length}
+    `);
+
     process.exit(0);
   } catch (err) {
-    console.error('Seeding error:', err);
+    console.error('❌ Seeding error:', err);
     process.exit(1);
   }
 };
