@@ -4,6 +4,7 @@ import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
 import Header from '@/components/layout/Home';
+import FloatingAssistant from '@/components/ai/FloatingChat';
 
 
 const inter = Inter({ subsets: ['latin'] });
@@ -25,6 +26,7 @@ export default function RootLayout({
           <CartProvider>
             <div className="min-h-screen bg-gray-50">
               <Header />
+              <FloatingAssistant></FloatingAssistant>
               <main className="container mx-auto px-4 py-8">{children}</main>
             </div>
           </CartProvider>
